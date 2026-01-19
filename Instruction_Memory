@@ -1,0 +1,22 @@
+`timescale 1ns / 1ps
+
+module Instruction_Memory(
+    input wire clk,
+    input wire [15:0] addr,
+    output reg [15:0] instr
+);
+   
+    reg [15:0] rom [0:16383];
+    integer i;
+   
+    initial begin
+        // Place at index 0 for simple sim
+        rom[0] = 16'b0111_0001_0001_0001;  // addi $1, $1, 1
+        rom[1] = 16'b1010_0000_0000_0000;  // j back (placeholder-real jump later)
+        for (i = 2; i < 16384; i = i + 1) rom[i] = 16'd0;
+    end
+   
+    always @(posedge clk) begin
+        instr <= rom[addr >> 1];
+    end
+endmodule
