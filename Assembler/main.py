@@ -79,7 +79,7 @@ filename = "game.asm"
 if len(sys.argv) >= 2:
     filename = sys.argv[1]
 
-f = open(filename, "r")
+f = open(filename, "r", encoding="utf-8")
 
 pc = 0
 for line in f:
