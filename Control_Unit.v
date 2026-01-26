@@ -1,27 +1,27 @@
 `timescale 1ns / 1ps
 
 module Control_Unit (
-    input  wire        clk,
-    input  wire        rst,
-    input  wire [3:0]  op_type,    // From decoder
-    input  wire        reg_imm,    // From decoder (1 for I-Type)
-    output reg         reg_write,  // To reg file (write ALU result)
-    output reg         alu_src_b,  // Mux: 1 = imm to ALU b, 0 = rt
-    output reg         mem_we,     // To data_mem (write enable, for stores later)
-    output reg         pc_write    // To PC (load new addr for branches/jumps later)
+    input wire clk,
+    input wire rst,
+    input wire [3:0] op_type,
+    input wire reg_imm,
+    output reg reg_write,
+    output reg IType,
+    output reg control_write,
+    output reg pc_write,
+    output reg pc_en,
+    output reg ir_en
 );
-
-    // States
-    parameter FETCH     = 3'd0;
-    parameter DECODE    = 3'd1;
-    parameter EXECUTE   = 3'd2;
-    parameter MEM       = 3'd3;
-    parameter WRITEBACK = 3'd4;
 
     reg [2:0] state;
     reg [2:0] next_state;
 
-    // State register (sequential)
+    parameter FETCH = 3'd0;
+    parameter DECODE = 3'd1;
+    parameter EXECUTE = 3'd2;
+    parameter MEMORY = 3'd3;
+    parameter WRITEBACK = 3'd4;
+
     always @(posedge clk or posedge rst) begin
         if (rst) begin
             state <= FETCH;
@@ -30,41 +30,39 @@ module Control_Unit (
         end
     end
 
-    // Next state logic (combinational)
     always @(*) begin
-        case (state)
-            FETCH:     next_state = DECODE;
-            DECODE:    next_state = EXECUTE;
-            EXECUTE:   next_state = MEM;
-            MEM:       next_state = WRITEBACK;
-            WRITEBACK: next_state = FETCH;
-            default:   next_state = FETCH;
-        endcase
-    end
-
-    // Output logic (combinational, defaults safe)
-    always @(*) begin
+        next_state = state;
         reg_write = 0;
-        alu_src_b = 0;
-        mem_we    = 0;
-        pc_write  = 0;
-
+        IType = reg_imm;
+        control_write = 0;
+        pc_write = 0;
+        pc_en = 0;
+        ir_en = 0;
+        
         case (state)
             FETCH: begin
-                // Nothing special (PC already advanced)
+                pc_en = 1;
+                ir_en = 1;
+                next_state = DECODE;
             end
             DECODE: begin
-                // Reg reads happen combinational
+            
+                next_state = EXECUTE;
             end
             EXECUTE: begin
-                alu_src_b = reg_imm;  // Use imm for I-Type
-                // Branch calc here later
+            
+                next_state = MEMORY;
             end
-            MEM: begin
-                // mem_we = 1 for store instr later
+            MEMORY: begin
+                reg_write = 1; // Write ALU result to reg for most ops
+                if (op_type == 4'd9) begin
+                    next_state = WRITEBACK;
+                end else begin
+                    next_state = FETCH;
+                end
             end
             WRITEBACK: begin
-                reg_write = 1;  // Write ALU result to reg for most ops
+                next_state = FETCH;
             end
         endcase
     end

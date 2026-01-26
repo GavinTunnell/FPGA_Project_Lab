@@ -12,7 +12,7 @@ module Data_Memory(
     integer i;
     initial begin
         for (i = 0; i < 4096; i = i + 1) begin
-            ram[i] = 16'd0;  // Clear on start
+            ram[i] = 16'd0; // Clear on start
         end
     end
     
@@ -22,4 +22,5 @@ module Data_Memory(
         end
         read_data <= ram[addr >> 1];
     end
+
 endmodule
